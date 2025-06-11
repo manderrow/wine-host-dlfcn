@@ -1,0 +1,5 @@
+LIBRARY host_dlfcn
+EXPORTS
+	host_dlopen
+	host_dlclose
+	host_dlsym
