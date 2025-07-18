@@ -14,9 +14,9 @@ pub const Library = struct {
     pub const Handle = *opaque {};
 };
 
-pub const HostDlOpen = fn (name: [*:0]const u8, flags: RTLD) callconv(.winapi) ?Library.Handle;
-pub const HostDlClose = fn (handle: Library.Handle) callconv(.winapi) void;
-pub const HostDlSym = fn (handle: Library.Handle, name: [*:0]const u8) callconv(.winapi) ?*anyopaque;
+pub const HostDlOpen = fn (name: [*:0]const u8, flags: RTLD) callconv(.c) ?Library.Handle;
+pub const HostDlClose = fn (handle: Library.Handle) callconv(.c) void;
+pub const HostDlSym = fn (handle: Library.Handle, name: [*:0]const u8) callconv(.c) ?*anyopaque;
 
 pub const RTLD = packed struct(u32) {
     LAZY: bool = false,
