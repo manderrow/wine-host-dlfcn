@@ -3,3 +3,4 @@ EXPORTS
 	host_dlopen
 	host_dlclose
 	host_dlsym
+	host_dlerror

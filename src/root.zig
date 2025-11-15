@@ -5,6 +5,7 @@ handle: std.os.windows.HMODULE,
 dlopen_fn: *const HostDlOpen,
 dlclose_fn: *const HostDlClose,
 dlsym_fn: *const HostDlSym,
+dlerror_fn: *const HostDlError,
 
 const Dlfcns = @This();
 
@@ -17,6 +18,7 @@ pub const Library = struct {
 pub const HostDlOpen = fn (name: [*:0]const u8, flags: RTLD) callconv(.c) ?Library.Handle;
 pub const HostDlClose = fn (handle: Library.Handle) callconv(.c) void;
 pub const HostDlSym = fn (handle: Library.Handle, name: [*:0]const u8) callconv(.c) ?*anyopaque;
+pub const HostDlError = fn () callconv(.c) ?[*:0]u8;
 
 pub const RTLD = packed struct(u32) {
     LAZY: bool = false,
@@ -32,6 +34,7 @@ pub fn init(name: [*:0]const u16) !Dlfcns {
         .dlopen_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlopen") orelse return error.FunctionNotFound),
         .dlclose_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlclose") orelse return error.FunctionNotFound),
         .dlsym_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlsym") orelse return error.FunctionNotFound),
+        .dlerror_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlerror") orelse return error.FunctionNotFound),
     };
 }
 
@@ -49,4 +52,8 @@ pub fn dlsym(self: Dlfcns, library: Library, name: [*:0]const u8) ?*anyopaque {
 
 pub fn dlclose(self: Dlfcns, library: Library) void {
     self.dlclose_fn(library.handle);
+}
+
+pub fn dlerror(self: Dlfcns) ?[*:0]u8 {
+    return self.dlerror_fn();
 }

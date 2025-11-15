@@ -9,7 +9,9 @@ pub fn main() !void {
     const example = dlfcns.dlopen("zig-out/lib/libexample.so", .{ .LAZY = true }) orelse @panic("Failed to load libexample.so");
     defer dlfcns.dlclose(example);
 
-    const add: *const fn (a: i32, b: i32) callconv(.winapi) i32 = @ptrCast(dlfcns.dlsym(example, "add") orelse @panic("Could not locate \"add\" in libexample"));
+    const add: *const fn (a: i32, b: i32) callconv(.winapi) i32 = @ptrCast(dlfcns.dlsym(example, "add") orelse {
+        std.debug.panic("Could not locate \"add\" in libexample: {?s}", .{std.mem.span(dlfcns.dlerror())});
+    });
     const n = add(9, 12);
     try std.testing.expectEqual(21, n);
 }

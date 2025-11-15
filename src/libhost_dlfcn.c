@@ -11,3 +11,7 @@ void host_dlclose(void* handle) {
 void* host_dlsym(void* handle, const char* name) {
   return dlsym(handle, name);
 }
+
+char* host_dlerror() {
+  return dlerror();
+}
