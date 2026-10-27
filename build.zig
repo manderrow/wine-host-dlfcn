@@ -6,16 +6,16 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
 
     const lib = b.addSystemCommand(&.{ "winegcc", "--winebuild" });
-    lib.addFileArg(b.path("winebuild.sh"));
-    if (optimize != .Debug) {
+    lib.addFileArg2(b.path("winebuild.sh"), .{});
+    if (optimize != .debug) {
         lib.addArg("-O3");
     }
     lib.addArgs(&.{ "-m64", "-o" });
     const lib_basename = "host_dlfcn.dll.so";
-    const lib_path = lib.addOutputFileArg(lib_basename);
+    const lib_path = lib.addOutputFileArg2(lib_basename, .{});
     lib.addArg("-shared");
-    lib.addFileArg(b.path("src/libhost_dlfcn.c"));
-    lib.addFileArg(b.path("src/libhost_dlfcn.def"));
+    lib.addFileArg2(b.path("src/libhost_dlfcn.c"), .{});
+    lib.addFileArg2(b.path("src/libhost_dlfcn.def"), .{});
 
     b.addNamedLazyPath("lib", lib_path);
     b.getInstallStep().dependOn(&b.addInstallLibFile(lib_path, lib_basename).step);
@@ -74,9 +74,7 @@ pub fn build(b: *std.Build) void {
 
     run_cmd.step.dependOn(b.getInstallStep());
 
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
+    run_cmd.addPassthruArgs();
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);

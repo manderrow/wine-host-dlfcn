@@ -27,19 +27,22 @@ pub const RTLD = packed struct(u32) {
 };
 
 pub fn init(name: [*:0]const u16) !Dlfcns {
-    const module = try std.os.windows.LoadLibraryW(name);
+    const module = kernel32.LoadLibraryW(name) orelse switch (std.os.windows.GetLastError()) {
+        .FILE_NOT_FOUND, .PATH_NOT_FOUND, .MOD_NOT_FOUND => return error.FileNotFound,
+        else => |err| return std.os.windows.unexpectedError(err),
+    };
     return .{
         .handle = module,
 
-        .dlopen_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlopen") orelse return error.FunctionNotFound),
-        .dlclose_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlclose") orelse return error.FunctionNotFound),
-        .dlsym_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlsym") orelse return error.FunctionNotFound),
-        .dlerror_fn = @ptrCast(std.os.windows.kernel32.GetProcAddress(module, "host_dlerror") orelse return error.FunctionNotFound),
+        .dlopen_fn = @ptrCast(kernel32.GetProcAddress(module, "host_dlopen") orelse return error.FunctionNotFound),
+        .dlclose_fn = @ptrCast(kernel32.GetProcAddress(module, "host_dlclose") orelse return error.FunctionNotFound),
+        .dlsym_fn = @ptrCast(kernel32.GetProcAddress(module, "host_dlsym") orelse return error.FunctionNotFound),
+        .dlerror_fn = @ptrCast(kernel32.GetProcAddress(module, "host_dlerror") orelse return error.FunctionNotFound),
     };
 }
 
 pub fn deinit(self: Dlfcns) void {
-    std.os.windows.FreeLibrary(self.handle);
+    std.debug.assert(kernel32.FreeLibrary(self.handle).toBool());
 }
 
 pub fn dlopen(self: Dlfcns, name: [*:0]const u8, flags: RTLD) ?Library {
@@ -57,3 +60,10 @@ pub fn dlclose(self: Dlfcns, library: Library) void {
 pub fn dlerror(self: Dlfcns) ?[*:0]u8 {
     return self.dlerror_fn();
 }
+
+// the standard library no longer binds kernel32
+const kernel32 = struct {
+    extern "kernel32" fn LoadLibraryW(lpLibFileName: [*:0]const u16) callconv(.winapi) ?std.os.windows.HMODULE;
+    extern "kernel32" fn GetProcAddress(hModule: std.os.windows.HMODULE, lpProcName: [*:0]const u8) callconv(.winapi) ?*anyopaque;
+    extern "kernel32" fn FreeLibrary(hLibModule: std.os.windows.HMODULE) callconv(.winapi) std.os.windows.BOOL;
+};
